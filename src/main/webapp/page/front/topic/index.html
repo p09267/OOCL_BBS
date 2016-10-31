@@ -1,0 +1,310 @@
+<#include "/page/front/common/_layout.html"/>
+<@html title="${topic.title!} - ${siteTitle!}" description="${topic.title!}" page_tab="topic" sidebar_topic_user="show"
+    sidebar_other_topic="show" sidebar_not_reply_topic="show">
+<link rel="stylesheet" href="${baseUrl!}/static/wangEditor/css/wangEditor.css">
+<link rel="stylesheet" href="${baseUrl!}/static/css/jquery.atwho.min.css">
+<script src="${baseUrl!}/static/js/lodash.min.js"></script>
+<script src="${baseUrl!}/static/wangEditor/js/wangEditor.js"></script>
+<script src="${baseUrl!}/static/plupload/js/plupload.full.min.js"></script>
+<script src="${baseUrl!}/static/js/jquery.atwho.min.js"></script>
+
+<div class="panel panel-default">
+    <div class="panel-body">
+        <div <#if topic.good == 1>class="np-label-digest"</#if>>
+            <#if topic.top == 1>
+                <span class="label label-success">置顶</span>
+            </#if>
+            <span style="font-size: 22px; font-weight: 700;vertical-align: middle;">
+            ${topic.title!}
+            </span>
+            <#if session.user??>
+                <#if collect??>
+                    <span style="display: inline-block; float: right;">
+                        <input type="button" id="collect" onclick="collect(2, '${topic.id!}')"
+                               class="btn btn-xs btn-default" value="取消收藏"/>
+                    </span>
+                <#else>
+                    <span style="display: inline-block; float: right;">
+                        <input type="button" id="collect" onclick="collect(1, '${topic.id!}')"
+                               class="btn btn-xs btn-default" value="加入收藏"/>
+                    </span>
+                </#if>
+            </#if>
+            <br>
+            <span style="font-size: 12px;color: #838383;">
+                <span>•发布于
+                    ${topic.formatDate(topic.in_time)!}&nbsp;
+                </span>
+                <span>•作者 <a href="${baseUrl!}/user/${topic.author_id!}">${topic.nickname!}</a>&nbsp;</span>
+                <span>•${topic.view!} 次浏览&nbsp;</span>
+                <#if topic.modify_time??>
+                    <span>•最后一次编辑是
+                        ${topic.formatDate(topic.modify_time)!}&nbsp;
+                    </span>
+                </#if>
+                <span>
+                    •来自 <a href="${baseUrl!}/?tab=${topic.tab}">${topic.sectionName!}</a>
+                </span>
+                <#if session.user?? && topic.author_id == session.user.id>
+                    <span style="display: inline-block; float: right;">
+                        <a href="${baseUrl!}/topic/edit/${topic.id!}"><span class="glyphicon glyphicon-pencil"></span></a>&nbsp;&nbsp;
+                        <a href="javascript:if(confirm('确定要删除此话题吗？'))location='${baseUrl!}/topic/delete/${topic.id!}'"><span
+                                class="glyphicon glyphicon-trash" style="cursor:pointer;"></span></a>
+                    </span>
+                </#if>
+            </span>
+        </div>
+    </div>
+    <div class="panel-body" style="border-top: 1px #E5E5E5 solid; padding-top: 10px">
+        <div id="topic_content">
+            ${topic.content!}
+        </div>
+        <#if topic.reposted?? && topic.reposted == 1>
+            <div style="word-break: break-all;">原文地址：<a href="${topic.original_url!}" target="_blank">${topic.original_url!}</a></div>
+        </#if>
+        <div class="pull-left topic-label">
+            <#list labels as label>
+                <a href="${baseUrl!}/?tab=${topic.tab!}&l=${label.id!}">
+                    <span class="label label-success label-item">${label.name}</span>
+                </a>
+            </#list>
+        </div>
+        <div class="bdsharebuttonbox pull-right">
+            <a href="javascript:;" class="bds_more" data-cmd="more"></a>
+            <a href="javascript:;" class="bds_qzone" data-cmd="qzone" title="分享到QQ空间"></a>
+            <a href="javascript:;" class="bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="javascript:;" class="bds_tqq" data-cmd="tqq" title="分享到腾讯微博"></a>
+            <a href="javascript:;" class="bds_renren" data-cmd="renren" title="分享到人人网"></a>
+            <a href="javascript:;" class="bds_weixin" data-cmd="weixin" title="分享到微信"></a>
+        </div>
+        <script>window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdPic":"","bdStyle":"0","bdSize":"16"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];</script>
+    </div>
+</div>
+<div class="panel panel-default">
+    <div class="panel-heading">${topic.reply_count!"0"} 回复</div>
+    <#list replies as reply>
+        <div class="panel-body" <#if reply_index &gt; 0>style="border-top: solid #F0F0F0 1px;"</#if>>
+            <div id="${reply.id!}" style="min-height:70px;" <#if reply.isdelete == 1> class="np-label-del" </#if>>
+                <a href="${baseUrl!}/user/${reply.author_id}" class="jf_user_avatar">
+                    <img src="${reply.avatar!}" width="30" title="${reply.nickname!}">
+                </a>
+                <span>
+                    <a href="${baseUrl!}/user/${reply.author_id!}" data_class="atwho" data_id="${reply.author_id!}">${reply.nickname!}</a>
+                    ${reply.formatDate(reply.in_time)!}
+                </span>
+                <#if session.user??>
+                    <div style="float: right;">
+                        <span>
+                            <#if topic.tab == 'ask'>
+                                <#if bestReply == 1>
+                                    <#if reply.best == 1>
+                                        已采纳
+                                    </#if>
+                                <#else>
+                                    <#if session.user?? && topic.author_id == session.user.id>
+                                        <span id="bestReply_${reply.id!}">
+                                            <a href="javascritp:;" onclick="bestReply('${topic.id!}', '${reply.id!}')">
+                                                <span class="glyphicon glyphicon-ok" title="采纳此回复"></span>
+                                            </a>
+                                        </span>
+                                    </#if>
+                                </#if>
+                            </#if>
+                        </span>
+                    </div>
+                </#if>
+                <div style="padding-top: 5px;">
+                    <div id="reply_content_${reply_index}" class="reply_content">
+                        ${reply.content!}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </#list>
+</div>
+<#if session.user??>
+    <div class="panel panel-default" id="reply_input">
+        <div class="panel-heading">
+            添加回复 <b style="color:red;">注:回复会奖励1点积分，但被管理员删除回复，将扣除作者2积分</b>
+        </div>
+        <div class="panel-body">
+            <form action="${baseUrl!}/reply/${topic.id!}" method="post" id="reply_form">
+                <div id="reply_content"><textarea id="content" name="content" class="form-control inputor" style="height: 200px; margin-bottom: 5px;"></textarea></div>
+                <input type="submit" class="btn btn-default btn-sm" value="回复">
+                <div id="preview_content" class="hidden"></div>
+            </form>
+        </div>
+        <div id="uploadContainer">
+            <input type="button" value="选择文件" id="btnBrowse"/>
+            <input type="button" value="上传文件" id="btnUpload">
+            <ul id="fileList"></ul>
+        </div>
+    </div>
+</#if>
+<script type="text/javascript">
+    $(function () {
+        $("#reply_form").submit(function () {
+            if ($.trim($("#content").val()) == "") {
+                alert("内容不能为空");
+                return false;
+            }
+            return true;
+        });
+
+        //==========wangEditor Start============
+
+        //获取dom节点
+        var $uploadContainer = $('#uploadContainer'),
+                $fileList = $('#fileList'),
+                $btnUpload = $('#btnUpload');
+
+        var editor = $('#content').wangEditor({
+            //重要：传入 uploadImgComponent 参数，值为 $uploadContainer
+            uploadImgComponent: $uploadContainer,
+            pasteUrl: '${baseUrl!}/pasteupload'
+        });
+
+        //实例化一个上传对象
+        var uploader = new plupload.Uploader({
+            browse_button: 'btnBrowse',
+            url: '${baseUrl!}/upload',
+            flash_swf_url: 'plupload/Moxie.swf',
+            sliverlight_xap_url: 'plupload/Moxie.xap',
+            filters: {
+                mime_types: [
+                    //只允许上传图片文件 （注意，extensions中，逗号后面不要加空格）
+                    { title: "图片文件", extensions: "jpg,gif,png,bmp" }
+                ]
+            }
+        });
+
+        //存储多个图片的url地址
+        var urls = [];
+
+        //重要：定义 event 变量，会在下文（触发上传事件时）被赋值
+        var event;
+
+        //初始化
+        uploader.init();
+
+        //绑定文件添加到队列的事件
+        uploader.bind('FilesAdded', function (uploader, files) {
+            //显示添加进来的文件名
+            $.each(files, function(key, value){
+                var fileName = value.name,
+                        html = '<li>' + fileName + '</li>';
+                $fileList.append(html);
+            });
+        });
+
+        //单个文件上传之后
+        uploader.bind('FileUploaded', function (uploader, file, responseObject) {
+            //从服务器返回图片url地址
+            var url = responseObject.response;
+            //先将url地址存储来，待所有图片都上传完了，再统一处理
+            urls.push(url);
+        });
+
+        //全部文件上传时候
+        uploader.bind('UploadComplete', function (uploader, files) {
+            // 用 try catch 兼容IE低版本的异常情况
+            try {
+                //打印出所有图片的url地址
+                $.each(urls, function (key, value) {
+                    //重要：调用 editor.command 方法，把每一个图片的url，都插入到编辑器中
+                    //重要：此处的 event 即上文定义的 event 变量
+                    editor.command(event, 'insertHTML', '<img src="' + value + '"/>');
+                });
+            } catch (ex) {
+                // 此处可不写代码
+            } finally {
+                //清空url数组
+                urls = [];
+
+                //清空显示列表
+                $fileList.html('');
+            }
+        });
+
+        //上传事件
+        $btnUpload.click(function(e){
+            //重要：将事件参数 e 赋值给 上文定义的 event 变量
+            event = e;
+            uploader.start();
+        });
+
+        //==========wangEditor End============
+
+        var nicknames = [];
+        nicknames[0] = {author_id:'${topic.author_id!}', name: '${topic.nickname!}'};
+        $("a[data_class='atwho']").each(function (i, item) {
+            nicknames[i + 1] = {author_id:$(item).attr('data_id') ,name:$(item).text()};
+        });
+
+        editor.$txt.atwho({
+            at: '@',
+            data: _.uniq(nicknames, 'author_id')
+        });
+    });
+
+    var _type = 0;
+
+    function collect(type, tid) {
+        var url = "${baseUrl!}/collect/" + tid;
+        if (_type == 0) _type = type;
+        if (_type == 2) url = "${baseUrl!}/collect/delete/" + tid;
+        $.ajax({
+            url: url,
+            async: false,
+            cache: false,
+            type: 'post',
+            dataType: "json",
+            data: {},
+            success: function (data) {
+                if (data.code == '200') {
+                    if (_type == 1) {
+                        _type = 2;
+                        $("#collect").removeClass("btn-default");
+                        $("#collect").addClass("btn-default");
+                        $("#collect").val("取消收藏");
+                    } else {
+                        _type = 1;
+                        $("#collect").removeClass("btn-default");
+                        $("#collect").addClass("btn-default");
+                        $("#collect").val("加入收藏");
+                    }
+                } else {
+                    alert(data.description);
+                }
+            }
+        });
+    }
+
+    function bestReply(tid, rid) {
+        if(confirm("确定采纳此回答吗?")) {
+            $.ajax({
+                url: '${baseUrl!}/reply/best',
+                async: false,
+                cache: false,
+                type: 'post',
+                dataType: "json",
+                data: {
+                    rid: rid,
+                    tid: tid
+                },
+                success: function (data) {
+                    if (data.code == '200') {
+                        $("span[id^='bestReply_']").each(function (i, item) {
+                            $(item).html("");
+                        });
+                        $("#bestReply_" + rid).html("已采纳")
+                    } else {
+                        alert(data.description);
+                    }
+                }
+            });
+        }
+    }
+
+</script>
+</@html>
